@@ -19,7 +19,7 @@ Follow these steps to set up and run the script:
 3. **Optional: Link to /usr/local/bin**:
    To run the script from anywhere, you can create a symbolic link:
    ```bash
-   sudo ln -s $(pwd)/dynswap.sh /usr/local/bin/dynswap.sh
+   sudo ln -s $(pwd)/dynswap /usr/local/bin/dynswap.sh
    ```
 
 4. **Run the script**:
