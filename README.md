@@ -1,6 +1,6 @@
 # dynswap.sh
 
-It's a bash script that dynamicaly (only) creates swapfiles when your available system memory is full
+It's a bash script that dynamicaly creates swapfiles when your available system memory is full
 
 ## Installation and Usage
 
@@ -8,13 +8,12 @@ Follow these steps to set up and run the script:
 
 1. **Download the script**:
    ```bash
-   curl -O <URL_TO_SCRIPT>
+   curl -O https://raw.githubusercontent.com/bazarassa/dynswap.sh/refs/heads/master/dynswap
    ```
-   *(Replace `<URL_TO_SCRIPT>` with the actual download link)*
 
 2. **Make the script executable**:
    ```bash
-   chmod +x dynswap.sh
+   chmod +x dynswap
    ```
 
 3. **Optional: Link to /usr/local/bin**:
