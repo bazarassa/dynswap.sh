@@ -8,8 +8,8 @@ touch "$STATE_FILE"
 
 # Function to check and remove empty swap files from the list
 cleanup_swap() {
-    echo "Checking tracked swap files for emptiness..."
-    
+    echo "Checking tracked swap files for usage via /proc/swaps..."
+
     # Read files from our state list
     if [[ ! -s "$STATE_FILE" ]]; then
         echo "No swap files tracked in $STATE_FILE."
@@ -21,15 +21,18 @@ cleanup_swap() {
 
     while IFS= read -r swpfile; do
         if [[ -f "$swpfile" ]]; then
-            # Check if the file size is zero or very small (e.g., less than 1KB)
-            size_kb=$(du -k "$swpfile" | awk '{print $1}')
-            if [ "$size_kb" -le 1 ]; then
-                echo "Found empty or near-empty swap file: $swpfile. Deactivating and removing."
+            # Get the 'Used' value from /proc/swaps for this specific file
+            # Column 1: Path, Column 3: Used
+            used_bytes=$(cat /proc/swaps | awk -v file="$swpfile" '$1 == file {print $3}')
+            
+            # If used_bytes is empty or 0, it's an "empty" swap file
+            if [[ -z "$used_bytes" ]] || [[ "$used_bytes" -eq 0 ]]; then
+                echo "Swap file $swpfile is not being used (Used: ${used_bytes:-0}). Deactivating and removing."
                 swapoff "$swpfile" 2>/dev/null
                 rm -f "$swpfile"
                 # Do not add to new state file
             else
-                echo "Swap file $swpfile is not empty (Size: ${size_kb}KB)."
+                echo "Swap file $swpfile is in use (Used: ${used_bytes} bytes)."
                 echo "$swpfile" >> "$NEW_STATE_FILE"
             fi
         else
