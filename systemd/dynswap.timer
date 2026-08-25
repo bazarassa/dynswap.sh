@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Dynswap every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=dynswap.service
+
+[Install]
+WantedBy=timers.target

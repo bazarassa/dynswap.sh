@@ -1,0 +1,12 @@
+[Unit]
+Description=Dynswap - Automatic Swap Management
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dynswap.sh
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

@@ -2,17 +2,27 @@
 
 # State file to keep track of created swap files
 STATE_FILE="/tmp/dynswap_state.txt"
+LOG_FILE="/var/log/dynswap"
 
 # Ensure state file exists
 touch "$STATE_FILE"
 
+# Function to log messages to both console and file
+log_message() {
+    local message="$1"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message"
+    # Attempt to write to log file, suppress errors if not run as root
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE" 2>/dev/null || \
+    echo "Warning: Cannot write to $LOG_FILE (insufficient permissions)." >&2
+}
+
 # Function to check and remove empty swap files from the list
 cleanup_swap() {
-    echo "Checking tracked swap files for emptiness..."
-    
+    log_message "Checking tracked swap files for usage via /proc/swaps..."
+
     # Read files from our state list
     if [[ ! -s "$STATE_FILE" ]]; then
-        echo "No swap files tracked in $STATE_FILE."
+        log_message "No swap files tracked in $STATE_FILE."
         return
     fi
 
@@ -21,19 +31,22 @@ cleanup_swap() {
 
     while IFS= read -r swpfile; do
         if [[ -f "$swpfile" ]]; then
-            # Check if the file size is zero or very small (e.g., less than 1KB)
-            size_kb=$(du -k "$swpfile" | awk '{print $1}')
-            if [ "$size_kb" -le 1 ]; then
-                echo "Found empty or near-empty swap file: $swpfile. Deactivating and removing."
+            # Get the 'Used' value from /proc/swaps for this specific file
+            # Column 1: Path, Column 3: Used
+            used_bytes=$(cat /proc/swaps | awk -v file="$swpfile" '$1 == file {print $3}')
+
+            # If used_bytes is empty or 0, it's an "empty" swap file
+            if [[ -z "$used_bytes" ]] || [[ "$used_bytes" -eq 0 ]]; then
+                log_message "Swap file $swpfile is not being used (Used: ${used_bytes:-0}). Deactivating and removing."
                 swapoff "$swpfile" 2>/dev/null
                 rm -f "$swpfile"
                 # Do not add to new state file
             else
-                echo "Swap file $swpfile is not empty (Size: ${size_kb}KB)."
+                log_message "Swap file $swpfile is in use (Used: ${used_bytes} bytes)."
                 echo "$swpfile" >> "$NEW_STATE_FILE"
             fi
         else
-            echo "Swap file $swpfile listed in state file not found on filesystem. Deactivating."
+            log_message "Swap file $swpfile listed in state file not found on filesystem. Deactivating."
             swapoff "$swpfile" 2>/dev/null
             # Do not add to new state file
         fi
@@ -52,14 +65,14 @@ add_swap() {
     threshold=1073741824
 
     if (($freetot < $threshold)); then
-        echo "Low memory detected (Total free: $((freetot / 1024 / 1024)) MB). Creating new swap file..."
+        log_message "Low memory detected (Total free: $((freetot / 1024 / 1024)) MB). Creating new swap file..."
         swpfile="/tmp/swp$RANDOM"
         dd if=/dev/zero of="$swpfile" bs=4096K count=256 status=none
         chown root "$swpfile"
         chmod 0600 "$swpfile"
         mkswap "$swpfile"
         swapon "$swpfile"
-        echo "New swap file created and activated: $swpfile"
+        log_message "New swap file created and activated: $swpfile"
         echo "$swpfile" >> "$STATE_FILE"
     fi
 }

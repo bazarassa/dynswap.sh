@@ -27,6 +27,28 @@ Follow these steps to set up and run the script:
    dynswap.sh
    ```
 
+## Systemd Integration (Recommended)
+
+To run the script automatically every minute using systemd, use the configuration files provided in the `./systemd` directory:
+
+1. **Move the script and config**:
+   ```bash
+   sudo cp /usr/local/bin/dynswap.sh /usr/local/bin/dynswap.sh
+   sudo cp ./systemd/dynswap.service /etc/systemd/system/
+   sudo cp ./systemd/dynswap.timer /etc/systemd/system/
+   ```
+
+2. **Enable and start the timer**:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now dynswap.timer
+   ```
+
+3. **Check the status**:
+   ```bash
+   systemctl list-timers --all | grep dynswap
+   ```
+
 > **Note:** This script was modified using AI.
 
 ## License
